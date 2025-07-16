@@ -7,14 +7,7 @@ import os
 from url_to_mp3 import url_to_mp3
 from mp3Separate import mp3_separate
 from mp3Convert import convert_to_192kbps
-import firebase_admin
-from firebase_admin import credentials, firestore
 
-cred = credentials.Certificate("firebase-key.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-
-app = FastAPI()
 
 @app.post("/process")
 async def process_youtube(request: Request):
@@ -40,12 +33,20 @@ async def process_youtube(request: Request):
 
     # 파일이 생성되었는지 확인
     if os.path.exists(result_path):
+    # Firebase Storage에 업로드
+    public_url = upload_to_firebase(result_path, f"cvt/{uriId}_no_vocals.mp3")
 
-        #dd
-        # doc_ref = db.collection('mp3f').document(uriId)
-        # doc_ref.set(file_info)
-        
-        return {"result": "success", "uriId": uriId}
+    vocals_path = f'cvt/{uriId}_vocals.mp3'
+    vocals_url = None
+    if os.path.exists(vocals_path):
+        vocals_url = upload_to_firebase(vocals_path, f"mp3/{uriId}_vocals.mp3")
+
+    return {
+        "result": "success",
+        "uriId": uriId,
+        "no_vocals_url": public_url,
+        "vocals_url": vocals_url
+    }
 
     raise HTTPException(status_code=500, detail="파일 생성에 실패했습니다.")
 
