@@ -39,13 +39,12 @@ async def process_youtube(request: Request):
 
     # 파일이 생성되었는지 확인
     if os.path.exists(result_path):
-        # Firebase Storage에 업로드
 
+        # Firebase Storage에 업로드
         vocals_path = f'cvt/{uriId}_vocals.mp3'
-        vocals_url = None
         if os.path.exists(vocals_path):
-            vocals_url = upload_to_firebase(vocals_path, f"mp3/{uriId}_vocals.mp3")
-        no_vocals_url = upload_to_firebase(result_path, f"cvt/{uriId}_no_vocals.mp3")
+            vocals_url = upload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
+            no_vocals_url = upload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
 
         # Firestore에 SongUpload 객체로 저장
         song_upload = SongUpload(

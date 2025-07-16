@@ -1,4 +1,6 @@
-repository/
+repository/*
+mp3Raw/*
+cvt/*
 
 # 가상환경
 venv/
