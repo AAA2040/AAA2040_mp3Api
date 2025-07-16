@@ -9,9 +9,30 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 bucket = storage.bucket()
 
+class SongUpload:
+    def __init__(self, vocal_mp3_url=None, mr_mp3_url=None, lyrics_url=None):
+        self.vocal_mp3_url = vocal_mp3_url
+        self.mr_mp3_url = mr_mp3_url
+        self.lyrics_url = lyrics_url
+
+    def to_dict(self):
+        return {
+            "vocal_mp3_url": self.vocal_mp3_url,
+            "mr_mp3_url": self.mr_mp3_url,
+            "lyrics_url": self.lyrics_url
+        }
+
 def upload_to_firebase(local_path, remote_path):
     blob = bucket.blob(remote_path)
     blob.upload_from_filename(local_path)
-    # 파일을 공개로 만들고 싶으면 아래 주석 해제
     # blob.make_public()
-    return blob.public_url  # 또는 blob.generate_signed_url()로 임시 다운로드 링크 생성 가능
+    public_url = blob.public_url
+    print(f"Uploaded {local_path} to Firebase Storage as {remote_path}. Public URL: {public_url}")
+    return public_url
+
+# song_id(예: uriId)로 SongUpload 객체를 저장
+
+def save_song_upload(song_id, song_upload: SongUpload):
+    doc_ref = db.collection('files').document(song_id)
+    doc_ref.set(song_upload.to_dict())
+    print(f"Saved SongUpload to Firestore: files/{song_id} -> {song_upload.to_dict()}")

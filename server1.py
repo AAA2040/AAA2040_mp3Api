@@ -7,7 +7,7 @@ import os
 from url_to_mp3 import url_to_mp3
 from mp3Separate import mp3_separate
 from mp3Convert import convert_to_192kbps
-from dbSender import upload_to_firebase
+from dbSender import upload_to_firebase, SongUpload, save_song_upload
 
 
 
@@ -40,17 +40,25 @@ async def process_youtube(request: Request):
     # 파일이 생성되었는지 확인
     if os.path.exists(result_path):
         # Firebase Storage에 업로드
-        public_url = upload_to_firebase(result_path, f"cvt/{uriId}_no_vocals.mp3")
 
         vocals_path = f'cvt/{uriId}_vocals.mp3'
         vocals_url = None
         if os.path.exists(vocals_path):
             vocals_url = upload_to_firebase(vocals_path, f"mp3/{uriId}_vocals.mp3")
+        no_vocals_url = upload_to_firebase(result_path, f"cvt/{uriId}_no_vocals.mp3")
+
+        # Firestore에 SongUpload 객체로 저장
+        song_upload = SongUpload(
+            vocal_mp3_url=vocals_url,
+            mr_mp3_url=no_vocals_url,
+            lyrics_url=None
+        )
+        save_song_upload(uriId, song_upload)
 
         return {
             "result": "success",
             "uriId": uriId,
-            "no_vocals_url": public_url,
+            "no_vocals_url": no_vocals_url,
             "vocals_url": vocals_url
     }
 
