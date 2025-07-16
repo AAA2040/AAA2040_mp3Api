@@ -7,6 +7,12 @@ import os
 from url_to_mp3 import url_to_mp3
 from mp3Separate import mp3_separate
 from mp3Convert import convert_to_192kbps
+from dbSender import upload_to_firebase
+
+
+
+app = FastAPI()
+
 
 
 @app.post("/process")
@@ -33,22 +39,23 @@ async def process_youtube(request: Request):
 
     # 파일이 생성되었는지 확인
     if os.path.exists(result_path):
-    # Firebase Storage에 업로드
-    public_url = upload_to_firebase(result_path, f"cvt/{uriId}_no_vocals.mp3")
+        # Firebase Storage에 업로드
+        public_url = upload_to_firebase(result_path, f"cvt/{uriId}_no_vocals.mp3")
 
-    vocals_path = f'cvt/{uriId}_vocals.mp3'
-    vocals_url = None
-    if os.path.exists(vocals_path):
-        vocals_url = upload_to_firebase(vocals_path, f"mp3/{uriId}_vocals.mp3")
+        vocals_path = f'cvt/{uriId}_vocals.mp3'
+        vocals_url = None
+        if os.path.exists(vocals_path):
+            vocals_url = upload_to_firebase(vocals_path, f"mp3/{uriId}_vocals.mp3")
 
-    return {
-        "result": "success",
-        "uriId": uriId,
-        "no_vocals_url": public_url,
-        "vocals_url": vocals_url
+        return {
+            "result": "success",
+            "uriId": uriId,
+            "no_vocals_url": public_url,
+            "vocals_url": vocals_url
     }
 
     raise HTTPException(status_code=500, detail="파일 생성에 실패했습니다.")
+
 
 @app.get("/download/{uri_id}/no_vocals")
 def down_no_vocals(uri_id: str):
@@ -61,3 +68,5 @@ def down_vocals(uri_id: str):
 
     # 파일 다운로드 응답
     return FileResponse(f'cvt/{uri_id}_vocals.mp3', media_type='audio/mpeg', filename=f"{uri_id}_vocals.mp3")
+
+    
