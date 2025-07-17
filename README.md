@@ -10,6 +10,8 @@ pip install fastapi uvicorn
 
 pip install firebase-admin
 
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
 repository 폴더 안에 firebase키 넣어야함
 
 
