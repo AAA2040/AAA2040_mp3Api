@@ -10,6 +10,9 @@ pip install fastapi uvicorn
 
 pip install firebase-admin
 
+repository 폴더 안에 firebase키 넣어야함
+
+
 [실행법 (터미널에 입력)]
 uvicorn server1:app --reload
 
