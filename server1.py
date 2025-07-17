@@ -1,4 +1,3 @@
-#pip install fastapi uvicorn
 #uvicorn server1:app --reload
 
 from fastapi import FastAPI, Request, HTTPException
@@ -30,8 +29,10 @@ async def process_youtube(request: Request):
         raise HTTPException(status_code=400, detail="유효한 유튜브 ID를 찾을 수 없습니다.")
 
     # 이미 파일이 있으면 바로 반환
-    result_path = f'cvt/{uriId}_no_vocals.mp3'
-    if not os.path.exists(result_path): # [수정] db에서 찾아야함
+    if os.path.exists(f'cvt/{uriId}_vocals.mp3') and os.path.exists(f'cvt/{uriId}_no_vocals.mp3'):
+        print("로컬 파일 존재함 (과정 스킵)")
+    else :
+        print("로컬 파일 없음 (다운로드&변환)")
         url_to_mp3(url)
         mp3_separate(uriId)
         convert_to_192kbps(uriId)
@@ -39,12 +40,7 @@ async def process_youtube(request: Request):
     # 파일 스토리지 업로드
     vocals_url = fileUpload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
     no_vocals_url = fileUpload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
-
-    if os.path.exists(f'cvt/{uriId}_vocals.mp3') and os.path.exists(f'cvt/{uriId}_no_vocals.mp3') :
-        print("로컬 파일 존재함")
-    else :
-        print("로컬 파일 없음")
-
+     
     # 가사 추출
     lyrics_text = req_lyrics(vocals_url) 
 
