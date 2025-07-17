@@ -2,6 +2,10 @@ import subprocess
 import os
 
 def convert_to_192kbps(uriId):
+    
+    if not os.path.exists('cvt'):
+        os.makedirs('cvt')
+
     command = [
         'ffmpeg',
         '-i', f'separated/htdemucs/{uriId}/no_vocals.mp3',         # 입력 파일

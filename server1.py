@@ -9,9 +9,8 @@ from url_to_mp3 import url_to_mp3
 from mp3Separate import mp3_separate
 from mp3Convert import convert_to_192kbps
 from dbSender import fileUpload_to_firebase, SongDBUpload, save_songDB_upload
+from lyrics_Sender import req_lyrics
 import requests
-
-add = "https://71f5d29b1c09.ngrok-free.app"
 
 app = FastAPI()
 
@@ -37,44 +36,33 @@ async def process_youtube(request: Request):
         mp3_separate(uriId)
         convert_to_192kbps(uriId)
 
-    # 파일이 생성되었는지 확인
-    if os.path.exists(result_path):
+    # 파일 스토리지 업로드
+    vocals_url = fileUpload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
+    no_vocals_url = fileUpload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
 
-        # Firebase Storage에 업로드
-        vocals_path = f'cvt/{uriId}_vocals.mp3'
-        if os.path.exists(vocals_path):
-            vocals_url = fileUpload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
-            # 가사 추출 요청
-            try:
-                whisper_response = requests.post(
-                    f"{add}/lyrics",  # ← 당신이 만든 Whisper 서버 주소
-                    json={"vocal_url": vocals_url},
-                    timeout=300
-                )
-                if whisper_response.status_code == 200:
-                    lyrics_text = whisper_response.json().get("lyrics")
-                    print(f"[디버그] Whisper 서버에서 받은 lyrics_text: {lyrics_text}")
-                else:
-                    print(f"[Whisper 오류] {whisper_response.status_code}: {whisper_response.text}")
-            except Exception as e:
-                print(f"[Whisper 호출 실패] {e}")
-            no_vocals_url = fileUpload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
+    if os.path.exists(f'cvt/{uriId}_vocals.mp3') and os.path.exists(f'cvt/{uriId}_no_vocals.mp3') :
+        print("로컬 파일 존재함")
+    else :
+        print("로컬 파일 없음")
 
-        # Firestore에 SongUpload 객체로 저장
-        song_DBDict = SongDBUpload(
-            vocal_mp3_url=vocals_url,
-            mr_mp3_url=no_vocals_url,
-            lyrics_url=lyrics_text if 'lyrics_text' in locals() else None
-        )
-        save_songDB_upload(uriId, song_DBDict)
+    # 가사 추출
+    lyrics_text = req_lyrics(vocals_url) 
 
-        return {
-            "result": "success",
-            "uriId": uriId,
-            "no_vocals_url": no_vocals_url,
-            "vocals_url": vocals_url,
-            "lyrics": lyrics_text if 'lyrics_text' in locals() else None
-        }
+    # Firestore에 SongUpload 객체로 저장
+    song_DBDict = SongDBUpload(
+        vocal_mp3_url=vocals_url,
+        mr_mp3_url=no_vocals_url,
+        lyrics_url=lyrics_text if 'lyrics_text' in locals() else None
+    )
+    save_songDB_upload(uriId, song_DBDict) # db에 데이터 저장
+
+    return {
+        "result": "success",
+        "uriId": uriId,
+        "no_vocals_url": no_vocals_url,
+        "vocals_url": vocals_url,
+        "lyrics": lyrics_text if 'lyrics_text' in locals() else None
+    }
 
     raise HTTPException(status_code=500, detail="파일 생성에 실패했습니다.")
 

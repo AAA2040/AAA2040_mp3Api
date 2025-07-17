@@ -27,7 +27,7 @@ def save_songDB_upload(song_id, SongDBUpload: SongDBUpload):
     doc_ref.set(SongDBUpload.to_dict())
     print(f"Saved SongDBUpload to Firestore: files/{song_id} -> {SongDBUpload.to_dict()}")
 
-def fileUpload_to_firebase(result_path, local_path):
+def fileUpload_to_firebase(result_path, local_path): # 파일 스토리지에 저장
     blob = bucket.blob(result_path)
     blob.upload_from_filename(local_path)
     # blob.make_public()
