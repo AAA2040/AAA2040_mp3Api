@@ -1,6 +1,10 @@
 import yt_dlp
 
 def url_to_mp3(url):
+
+    if not os.path.exists('mp3Raw'):
+        os.makedirs('mp3Raw')
+
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': 'mp3Raw/%(id)s.%(ext)s',
