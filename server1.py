@@ -8,8 +8,9 @@ from url_to_mp3 import url_to_mp3
 from mp3Separate import mp3_separate
 from mp3Convert import convert_to_192kbps
 from dbSender import upload_to_firebase, SongUpload, save_song_upload
+import requests
 
-
+add = "https://71f5d29b1c09.ngrok-free.app"
 
 app = FastAPI()
 
@@ -44,13 +45,27 @@ async def process_youtube(request: Request):
         vocals_path = f'cvt/{uriId}_vocals.mp3'
         if os.path.exists(vocals_path):
             vocals_url = upload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
+            # 가사 추출 요청
+            try:
+                whisper_response = requests.post(
+                    f"{add}/lyrics",  # ← 당신이 만든 Whisper 서버 주소
+                    json={"vocal_url": vocals_url},
+                    timeout=300
+                )
+                if whisper_response.status_code == 200:
+                    lyrics_text = whisper_response.json().get("lyrics")
+                    print(f"[디버그] Whisper 서버에서 받은 lyrics_text: {lyrics_text}")
+                else:
+                    print(f"[Whisper 오류] {whisper_response.status_code}: {whisper_response.text}")
+            except Exception as e:
+                print(f"[Whisper 호출 실패] {e}")
             no_vocals_url = upload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
 
         # Firestore에 SongUpload 객체로 저장
         song_upload = SongUpload(
             vocal_mp3_url=vocals_url,
             mr_mp3_url=no_vocals_url,
-            lyrics_url=None
+            lyrics_url=lyrics_text if 'lyrics_text' in locals() else None
         )
         save_song_upload(uriId, song_upload)
 
@@ -58,8 +73,9 @@ async def process_youtube(request: Request):
             "result": "success",
             "uriId": uriId,
             "no_vocals_url": no_vocals_url,
-            "vocals_url": vocals_url
-    }
+            "vocals_url": vocals_url,
+            "lyrics": lyrics_text if 'lyrics_text' in locals() else None
+        }
 
     raise HTTPException(status_code=500, detail="파일 생성에 실패했습니다.")
 
