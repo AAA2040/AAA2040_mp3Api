@@ -1,4 +1,5 @@
 #pip install fastapi uvicorn
+#uvicorn server1:app --reload
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse
@@ -7,14 +8,12 @@ import os
 from url_to_mp3 import url_to_mp3
 from mp3Separate import mp3_separate
 from mp3Convert import convert_to_192kbps
-from dbSender import upload_to_firebase, SongUpload, save_song_upload
+from dbSender import fileUpload_to_firebase, SongDBUpload, save_songDB_upload
 import requests
 
 add = "https://71f5d29b1c09.ngrok-free.app"
 
 app = FastAPI()
-
-
 
 @app.post("/process")
 async def process_youtube(request: Request):
@@ -44,7 +43,7 @@ async def process_youtube(request: Request):
         # Firebase Storage에 업로드
         vocals_path = f'cvt/{uriId}_vocals.mp3'
         if os.path.exists(vocals_path):
-            vocals_url = upload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
+            vocals_url = fileUpload_to_firebase(f"vocals/{uriId}_vocals.mp3",f'cvt/{uriId}_vocals.mp3')
             # 가사 추출 요청
             try:
                 whisper_response = requests.post(
@@ -59,15 +58,15 @@ async def process_youtube(request: Request):
                     print(f"[Whisper 오류] {whisper_response.status_code}: {whisper_response.text}")
             except Exception as e:
                 print(f"[Whisper 호출 실패] {e}")
-            no_vocals_url = upload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
+            no_vocals_url = fileUpload_to_firebase(f"no_vocals/{uriId}_no_vocals.mp3",f'cvt/{uriId}_no_vocals.mp3')
 
         # Firestore에 SongUpload 객체로 저장
-        song_upload = SongUpload(
+        song_DBDict = SongDBUpload(
             vocal_mp3_url=vocals_url,
             mr_mp3_url=no_vocals_url,
             lyrics_url=lyrics_text if 'lyrics_text' in locals() else None
         )
-        save_song_upload(uriId, song_upload)
+        save_songDB_upload(uriId, song_DBDict)
 
         return {
             "result": "success",
