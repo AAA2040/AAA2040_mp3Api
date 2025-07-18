@@ -52,6 +52,29 @@ async def process_youtube(request: Request):
     )
     save_songDB_upload(uriId, song_DBDict) # db에 데이터 저장
 
+    # === 여기서부터 추가 ===
+    result_data = {
+        "result": "success",
+        "uriId": uriId,
+        "no_vocals_url": no_vocals_url,
+        "vocals_url": vocals_url,
+        "lyrics": lyrics_text if 'lyrics_text' in locals() else None
+    }
+    print("result data : ", result_data)
+    
+    try:
+        response = requests.post(
+            "https://f2e082c5c354.ngrok-free.app/",
+            json=result_data,
+            timeout=300 # 5분
+        )
+        print("외부 서버 응답:", response.status_code, response.text)
+    except Exception as e:
+        print("외부 서버 전송 실패:", e)
+    # === 여기까지 추가 ===
+
+
+
     return {
         "result": "success",
         "uriId": uriId,

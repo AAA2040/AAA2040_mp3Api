@@ -1,7 +1,7 @@
 import os
 import requests
 
-add = "https://71f5d29b1c09.ngrok-free.app"
+add = "https://733ea86fa7b9.ngrok-free.app"
 
 def req_lyrics(vocals_url):
 
