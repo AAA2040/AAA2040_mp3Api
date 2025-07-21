@@ -1,7 +1,7 @@
 #uvicorn server1:app --reload
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request, HTTPException, UploadFile, Form
+from fastapi.responses import FileResponse, HTMLResponse
 import re
 import os
 import requests
@@ -35,6 +35,15 @@ os.makedirs('mp3Raw', exist_ok=True)
 os.makedirs('separated', exist_ok=True)
 
 app = FastAPI()
+
+@app.get("/")
+async def dev_page():
+    try:
+        with open("dev_page.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content, status_code=200)
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>개발자 페이지 로드 실패</h1><p>{e}</p>", status_code=500)
 
 @app.post("/process")
 async def process_youtube(request: Request):
@@ -179,6 +188,48 @@ async def process_youtube(request: Request):
                 logger.error(f"실패한 처리 파일 정리 실패: {cleanup_error}")
         raise HTTPException(status_code=500, detail=f"서버 내부 오류가 발생했습니다: {str(e)}")
 
+
+@app.post("/upload-key")
+async def upload_keyfile(keyfile: UploadFile):
+    try:
+        if keyfile.filename != "key.json":
+            return HTMLResponse("<h3>key.json 파일만 업로드 가능합니다.</h3>", status_code=400)
+        save_path = os.path.join(os.getcwd(), "key.json")
+        with open(save_path, "wb") as f:
+            content = await keyfile.read()
+            f.write(content)
+        return HTMLResponse("<h3>key.json 업로드 성공!</h3><a href='/'>돌아가기</a>", status_code=200)
+    except Exception as e:
+        return HTMLResponse(f"<h3>업로드 실패: {e}</h3><a href='/'>돌아가기</a>", status_code=500)
+
+@app.post("/set-whisper-url")
+async def set_whisper_url(request: Request):
+    form = await request.form()
+    whisper_url = form.get("whisper_url")
+    if not whisper_url:
+        return HTMLResponse("<h3>Whisper 서버 주소가 입력되지 않았습니다.</h3><a href='/'>돌아가기</a>", status_code=400)
+    try:
+        with open("whisper_server_url.txt", "w", encoding="utf-8") as f:
+            f.write(whisper_url.strip())
+        return HTMLResponse("<h3>Whisper 서버 주소 저장 성공!</h3><a href='/'>돌아가기</a>", status_code=200)
+    except Exception as e:
+        return HTMLResponse(f"<h3>저장 실패: {e}</h3><a href='/'>돌아가기</a>", status_code=500)
+
+@app.get("/monitor-info")
+async def monitor_info():
+    keyjson_content = None
+    whisper_url = None
+    try:
+        with open("key.json", "r", encoding="utf-8") as f:
+            keyjson_content = f.read()
+    except Exception:
+        keyjson_content = "(key.json 없음)"
+    try:
+        with open("whisper_server_url.txt", "r", encoding="utf-8") as f:
+            whisper_url = f.read().strip()
+    except Exception:
+        whisper_url = "(whisper_server_url.txt 없음)"
+    return {"keyjson": keyjson_content, "whisper_url": whisper_url}
 
 @app.get("/download/{uri_id}/no_vocals")
 def down_no_vocals(uri_id: str):

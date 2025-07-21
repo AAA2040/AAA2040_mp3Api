@@ -1,0 +1,37 @@
+<html>
+<head><title>개발자 페이지</title></head>
+<body>
+    <h1>개발자 페이지</h1>
+    <form action="/upload-key" method="post" enctype="multipart/form-data">
+        <label>key.json 업로드:</label>
+        <input type="file" name="keyfile" accept="application/json" required />
+        <button type="submit">업로드</button>
+    </form>
+    <form action="/set-whisper-url" method="post">
+        <label>Whisper 서버 주소:</label>
+        <input type="text" name="whisper_url" placeholder="http://127.0.0.1:8084" required />
+        <button type="submit">저장</button>
+    </form>
+    <div id="monitor">
+        <h2>모니터링</h2>
+        <p>key.json 및 Whisper 서버 주소 변경 사항이 여기에 표시됩니다.</p>
+    </div>
+</body>
+<script>
+function updateMonitor() {
+    fetch('/monitor-info')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('monitor').innerHTML = `
+                <h2>모니터링</h2>
+                <b>key.json 내용:</b><br>
+                <pre style='background:#eee;max-height:200px;overflow:auto;'>${data.keyjson}</pre>
+                <b>Whisper 서버 주소:</b><br>
+                <pre style='background:#eee;'>${data.whisper_url}</pre>
+            `;
+        });
+}
+setInterval(updateMonitor, 2000);
+window.onload = updateMonitor;
+</script>
+</html> 

@@ -7,14 +7,22 @@ from logging_config import get_logger
 load_dotenv()
 
 # 환경 변수 가져오기
-LYRICS_SERVER_URL = os.getenv('LYRICS_SERVER_URL', '') # 위스퍼 서버 입력
 REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', '300'))
 
 # 로깅 설정
 logger = get_logger(__name__)
 
+def get_lyrics_server_url():
+    try:
+        with open("whisper_server_url.txt", "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception as e:
+        logger.warning(f"whisper_server_url.txt 파일을 읽을 수 없습니다: {e}")
+        return None
+
 def req_lyrics(vocals_url):
     """외부 Whisper 서버를 통해 가사를 추출합니다."""
+    LYRICS_SERVER_URL = get_lyrics_server_url()
     
     if not vocals_url:
         logger.warning("vocals_url이 제공되지 않았습니다.")

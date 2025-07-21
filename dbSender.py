@@ -12,7 +12,7 @@ load_dotenv()
 logger = get_logger(__name__)
 
 # 환경 변수 가져오기
-FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', 'repository/aaa2040-c4b67-firebase-adminsdk-fbsvc-0761cb3ce4.json')
+FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', '')
 FIREBASE_STORAGE_BUCKET = os.getenv('FIREBASE_STORAGE_BUCKET', 'aaa2040-c4b67.firebasestorage.app')
 
 # Firebase 초기화
