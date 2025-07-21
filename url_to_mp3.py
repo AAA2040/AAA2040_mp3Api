@@ -3,6 +3,7 @@ import os
 import re
 from dotenv import load_dotenv
 from logging_config import get_logger
+import platform
 
 # 환경 변수 로드
 load_dotenv()
@@ -55,7 +56,11 @@ def url_to_mp3(url):
             'audioformat': 'mp3',
         }
         
-        ffmpeg_path = os.getenv('FFMPEG_PATH', "ffmpeg")
+        # ffmpeg 경로 설정 (도커/리눅스에서는 /usr/bin/ffmpeg로 고정)
+        if platform.system() == "Linux":
+            ffmpeg_path = "/usr/bin/ffmpeg"
+        else:
+            ffmpeg_path = os.getenv('FFMPEG_PATH', "ffmpeg")
         ydl_opts['ffmpeg_location'] = ffmpeg_path
         
         # FFmpeg 경로 확인
