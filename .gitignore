@@ -1,6 +1,8 @@
 repository/*
 mp3Raw/*
 cvt/*
+.env
+repository/*.json
 
 # 가상환경
 venv/

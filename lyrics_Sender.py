@@ -1,25 +1,91 @@
 import os
 import requests
+from dotenv import load_dotenv
+from logging_config import get_logger
 
-add = "https://733ea86fa7b9.ngrok-free.app"
+# 환경 변수 로드
+load_dotenv()
+
+# 환경 변수 가져오기
+LYRICS_SERVER_URL = os.getenv('LYRICS_SERVER_URL', '') # 위스퍼 서버 입력
+REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', '300'))
+
+# 로깅 설정
+logger = get_logger(__name__)
 
 def req_lyrics(vocals_url):
-
-    # 가사 추출 요청
+    """외부 Whisper 서버를 통해 가사를 추출합니다."""
+    
+    if not vocals_url:
+        logger.warning("vocals_url이 제공되지 않았습니다.")
+        return None
+    
+    if not LYRICS_SERVER_URL:
+        logger.warning("LYRICS_SERVER_URL이 설정되지 않았습니다.")
+        return None
+    
     try:
-        whisper_response = requests.post(
-            f"{add}/lyrics",  # ← 당신이 만든 Whisper 서버 주소
-            json={"vocal_url": vocals_url},
-            timeout=300 # 5분
+        logger.info(f"가사 추출 요청 시작: {vocals_url}")
+        
+        # 요청 헤더 설정
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'MP3API/1.0'
+        }
+        
+        # 요청 데이터 준비
+        request_data = {"vocal_url": vocals_url}
+        
+        # Whisper 서버에 가사 추출 요청
+        response = requests.post(
+            f"{LYRICS_SERVER_URL}/lyrics",
+            json=request_data,
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
         )
-        if whisper_response.status_code == 200:
-            lyrics_text = whisper_response.json().get("lyrics")
-            print(f"[디버그] Whisper 서버에서 받은 lyrics_text: {lyrics_text}")
-        else:
-            print(f"[Whisper 오류] {whisper_response.status_code}: {whisper_response.text}")
+        
+        # 응답 상태 코드 확인
+        if response.status_code == 200:
+            try:
+                response_data = response.json()
+                lyrics_text = response_data.get("lyrics")
+                
+                if lyrics_text:
+                    logger.info(f"가사 추출 성공: {len(lyrics_text)} 문자")
+                    return lyrics_text
+                else:
+                    logger.warning("응답에서 가사를 찾을 수 없습니다.")
+                    return None
+                    
+            except ValueError as e:
+                logger.error(f"JSON 파싱 실패: {e}")
+                logger.error(f"응답 내용: {response.text[:200]}...")
+                return None
+                
+        elif response.status_code == 404:
+            logger.error("Whisper 서버의 /lyrics 엔드포인트를 찾을 수 없습니다.")
             return None
-    except Exception as e:
-        print(f"[Whisper 호출 실패] {e}")
+            
+        elif response.status_code == 500:
+            logger.error("Whisper 서버 내부 오류 발생")
+            return None
+            
+        else:
+            logger.error(f"Whisper 서버 오류 {response.status_code}: {response.text}")
+            return None
+            
+    except requests.exceptions.Timeout:
+        logger.error(f"가사 추출 요청 타임아웃 ({REQUEST_TIMEOUT}초)")
         return None
         
-    return lyrics_text
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Whisper 서버 연결 실패: {LYRICS_SERVER_URL}")
+        return None
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"가사 추출 요청 실패: {e}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"가사 추출 중 예상치 못한 오류: {e}")
+        return None
