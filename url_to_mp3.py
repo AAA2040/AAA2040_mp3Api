@@ -55,7 +55,7 @@ def url_to_mp3(url):
             'audioformat': 'mp3',
         }
         
-        ffmpeg_path = os.getenv('FFMPEG_PATH', "ffmpeg-master-latest-win64-gpl-shared\\bin")
+        ffmpeg_path = os.getenv('FFMPEG_PATH', "ffmpeg")
         ydl_opts['ffmpeg_location'] = ffmpeg_path
         
         # FFmpeg 경로 확인
